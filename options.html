@@ -1,0 +1,88 @@
+<!doctype html>
+<!--/**
+ * Extension options page.
+ * @since 1.5
+*/-->
+<html>
+	<head>
+		<title>ChromeLogger Options</title>
+		<meta charset="utf-8"/>
+		<style type="text/css">
+
+			fieldset {
+				border: solid 1px lightgrey;
+				border-radius: 3px;
+				background-color: white;
+				clear: both;
+				margin-bottom: 1em;
+			}
+
+			legend {
+				color: grey;
+			}
+
+			fieldset > label,
+			fieldset > label + * {
+				display: block;
+				float: left;
+			}
+
+			fieldset > label {
+				width: 30%;
+				text-align: right;
+				margin-right: 1%;
+			}
+
+			fieldset > label + * {
+				width: 60%;
+				clear: right;
+				margin-bottom: 1em;
+			}
+
+			fieldset > label + *:last-child {
+				margin-bottom: 0em;
+			}
+
+		</style>
+		<script type="text/javascript" src="global.js"></script>
+		<script type="text/javascript" src="options.js"></script>
+	</head>
+	<body>
+
+		<form>
+
+		<fieldset id="console_substitution_styles">
+			<legend>Substitution Styles</legend>
+
+			<label for="console_substitution_styles-error">Console.error()</label>
+			<input type="text" id="console_substitution_styles-error"/>
+
+			<label for="console_substitution_styles-warn">Console.warn()</label>
+			<input type="text" id="console_substitution_styles-warn"/>
+
+			<label for="console_substitution_styles-info">Console.info()</label>
+			<input type="text" id="console_substitution_styles-info"/>
+
+			<label for="console_substitution_styles-log">Console.log()</label>
+			<input type="text" id="console_substitution_styles-log"/>
+
+			<label for="console_substitution_styles-group">Console.group()</label>
+			<input type="text" id="console_substitution_styles-group"/>
+
+			<label for="console_substitution_styles-number">Number</label>
+			<input type="text" id="console_substitution_styles-number"/>
+
+			<label for="console_substitution_styles-fileline">file:line</label>
+			<input type="text" id="console_substitution_styles-fileline"/>
+
+		</fieldset>
+
+		<section style="text-align:center;">
+			<button id="save">Save</button>
+			<button id="reset">Reset</button>
+		</section>
+
+		</form>
+
+	</body>
+</html>

@@ -1,0 +1,35 @@
+{
+	"manifest_version": 2,
+	"name": "Chrome Logger",
+	"version": "1.5",
+	"description": "Support for Chrome Logger data output in DevTools web console.",
+
+	"background": {
+		"scripts": [ "global.js", "bg.js" ]
+	},
+
+	"permissions": [
+		"<all_urls>",
+		"webRequest",
+		"webNavigation",
+		"storage"
+	],
+
+	"options_ui": {
+		"page": "options.html"
+	},
+
+	"devtools_page": "dev.html",
+
+	"applications": {
+		"gecko": {
+			"id": "chromelogger@burningmoth.com"
+		}
+	},
+
+	"icons": {
+		"48": "icon.svg",
+		"96": "icon.svg"
+	}
+
+}
