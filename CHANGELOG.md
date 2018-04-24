@@ -1,3 +1,6 @@
+= 2018 Apr 23 / Version 1.6 =
+* Restored: removal of `__proto__` and `length` properties from objects and arrays.
+
 = 2018 Mar 26 / Version 1.5 =
 * Added: console message styling for various contexts w/options page to customize.
 * Added: parsing of ChromeLogger formatted rows data from loaded DOM content. Syntax: `<script data-chromelogger-rows="{key}">var {key} = [[log, backtrace, type], ...];</script>`

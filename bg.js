@@ -446,7 +446,10 @@ browser.webNavigation.onDOMContentLoaded.addListener(( details )=>{
 		// main tab document ...
 		if ( details.frameId == 0 ) {
 
-			browser.tabs.executeScript( details.tabId, { file: '/log.js' })
+			browser.tabs.executeScript( details.tabId, {
+				file: '/log.js',
+				code: cleanObjectProperties.toString(),
+			})
 			.then(()=>{
 
 				// update ready state ...

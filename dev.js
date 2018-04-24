@@ -49,9 +49,10 @@ port.onMessage.addListener(( details ) => {
 
 		browser.devtools.inspectedWindow.eval(
 			'(function(){ '
+				+ cleanObjectProperties.toString() + ' '
 				+ JSON.stringify(details.args) + '.forEach(args=>{ '
 					+ 'try { '
-						+ 'console[ args.shift() ].apply(null, args); '
+						+ 'console[ args.shift() ].apply(null, args.map(cleanObjectProperties)); '
 					+ '} catch ( error ) { console.error(error); } '
 				+ '}); '
 				+ 'return true; '

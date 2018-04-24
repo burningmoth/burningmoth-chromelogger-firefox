@@ -16,3 +16,29 @@ const DEFAULT_OPTIONS = {
 	}
 };
 
+
+/**
+ * Array.map callback
+ * Removes "__proto__" and "length" properties from objects and arrays.
+ * @since 1.3
+ * @param mixed obj
+ * @return mixed
+  */
+function cleanObjectProperties( obj ) {
+
+	// not an object ? return as-is ...
+	if ( typeof obj !== 'object' ) return obj;
+
+	// removes length property from arrays ...
+	if ( Array.isArray(obj) ) obj = Object.assign({}, obj);
+
+	// remove annoying __proto__ property ...
+	obj.__proto__ = null;
+
+	// recurse through properties ...
+	Object.entries(obj).forEach(([ key, value ])=>{ obj[ key ] = cleanObjectProperties( value ); });
+
+	// return cloned object ...
+	return obj;
+
+}
