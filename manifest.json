@@ -1,7 +1,7 @@
 {
 	"manifest_version": 2,
 	"name": "Chrome Logger",
-	"version": "1.6",
+	"version": "1.6.1",
 	"description": "Support for Chrome Logger data output in DevTools web console.",
 
 	"background": {

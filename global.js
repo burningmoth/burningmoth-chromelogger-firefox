@@ -27,7 +27,7 @@ const DEFAULT_OPTIONS = {
 function cleanObjectProperties( obj ) {
 
 	// not an object ? return as-is ...
-	if ( typeof obj !== 'object' ) return obj;
+	if ( typeof obj !== 'object' || obj === null ) return obj;
 
 	// removes length property from arrays ...
 	if ( Array.isArray(obj) ) obj = Object.assign({}, obj);

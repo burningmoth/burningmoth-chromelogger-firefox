@@ -1,3 +1,7 @@
+= 2018 Apr 24 / Version 1.6.1 =
+* Fixed: trying (and failing, of course) to process null values as objects w/enumerated properties.
+* Fixed: tabs.executeScript() fails injecting both file + code, throws to devtools fallback.
+
 = 2018 Apr 23 / Version 1.6 =
 * Restored: removal of `__proto__` and `length` properties from objects and arrays.
 

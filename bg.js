@@ -446,18 +446,23 @@ browser.webNavigation.onDOMContentLoaded.addListener(( details )=>{
 		// main tab document ...
 		if ( details.frameId == 0 ) {
 
-			browser.tabs.executeScript( details.tabId, {
-				file: '/log.js',
-				code: cleanObjectProperties.toString(),
-			})
+			// inject log.js to receive messages sent to tab ? ...
+			browser.tabs.executeScript( details.tabId, { file: '/log.js' })
 			.then(()=>{
 
-				// update ready state ...
-				tab.ready = true;
+				// load global functions required by log.js / assume this works at this point ...
+				browser.tabs.executeScript( details.tabId, { file: '/global.js' })
+				.finally(()=>{
 
-				// send any pending items ...
-				while ( tab.pending.length ) browser.tabs.sendMessage( details.tabId, tab.pending.shift() );
+					// update ready state ...
+					tab.ready = true;
 
+					// send any pending items ...
+					while ( tab.pending.length ) browser.tabs.sendMessage( details.tabId, tab.pending.shift() );
+
+				});
+
+			// unable to inject script ! fallback to devtools functions ...
 			}).catch(()=>{
 
 				// fallback to devTools.inspectedWindow.eval() !!!
@@ -466,6 +471,7 @@ browser.webNavigation.onDOMContentLoaded.addListener(( details )=>{
 				// send any pending items back through the dev port ...
 				while ( tab.pending.length ) tab.devPort.postMessage( tab.pending.shift() );
 
+			// additional processes ...
 			}).finally(()=>{
 
 				// extract any info to log from the frame ...
