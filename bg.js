@@ -171,6 +171,8 @@ function onTabRemoved( tabId ) {
 /**
  * Process ChromeLogger data rows into console args.
  * @since 1.5
+ * @since 1.7
+ * 	- flexible support for different row.column arrangments
  * @param ChromeLoggerData object data
  */
 function processChromeLoggerData( data ) {
@@ -180,19 +182,45 @@ function processChromeLoggerData( data ) {
 		// load options, process data, pass to Tab.log() ...
 		browser.storage.sync.get(DEFAULT_OPTIONS).then(opts=>{
 
-			// map to console method args array ...
+			// ensure lowercase columns array ...
+			data.columns = (
+				! data.columns
+				|| ! Array.isArray(data.columns)
+				? [ 'log', 'backtrace', 'type' ]
+				: data.columns.map(column=>{ return column.toLowerCase(); })
+			);
+
+			// map to rows array to console method args ...
 			data.args = data.rows.map(row=>{
 
-				var [ args, fileline, method ] = row,
-					style = '',
-					tmpl_pattern = '',
-					tmpl_args = [];
+				// convert row to object w/columns mapped to properties ...
+				row = row.reduce(function( row, value, index ){
+					row[ data.columns[ index ] ] = value;
+					return row;
+				}, { 'log': [], 'backtrace': false, 'type': 'log' });
+
+				var
+
+				// console.[method] arguments ...
+				args = row.log,
+
+				// console method ...
+				method = row.type,
+
+				// file:line ...
+				fileline = row.backtrace,
+
+				// style per argument type ...
+				style = '',
+
+				// substitution pattern ...
+				tmpl_pattern = '',
+
+				// substition arguments ...
+				tmpl_args = [];
 
 				// ensure arguments is array ...
-				if ( !Array.isArray(args) ) args = [ args ];
-
-				// ensure method ...
-				if ( !method ) method = 'log';
+				if ( ! Array.isArray(args) ) args = [ args ];
 
 				// process arguments ...
 				if ( args.length > 0 ) {
@@ -241,6 +269,32 @@ function processChromeLoggerData( data ) {
 									}
 									else {
 										tmpl_pattern.push('%s');
+										tmpl_args.push(arg);
+									}
+									break;
+
+								case 'object':
+
+									// has special class name property ? prepend and remove ...
+									if ( arg.hasOwnProperty('___class_name') ) {
+
+										style = opts.console_substitution_styles['classname'];
+
+										if ( style ) {
+											tmpl_pattern.push('%c%s%c %o');
+											tmpl_args.push(style, arg.___class_name, '', arg);
+										}
+										else {
+											tmpl_pattern.push('%s %o');
+											tmpl_args.push(arg.___class_name, arg);
+										}
+
+										delete arg.___class_name;
+
+									}
+
+									else {
+										tmpl_pattern.push('%o');
 										tmpl_args.push(arg);
 									}
 									break;
@@ -308,6 +362,9 @@ function processChromeLoggerData( data ) {
  * @since 1.0
  * @since 1.5
  *	- accept rows array retrieved from document by devtools ...
+ * @since 1.7
+ *	- also checks for X-ChromePHP-Data header
+ *	- logs details url, method separately as chromelogger data
  * @param tabs.onHeadersReceived details
  */
 function onDevPortMessage( details ) {
@@ -315,26 +372,44 @@ function onDevPortMessage( details ) {
 	// details object passed through the open devtools ...
 	if ( details.responseHeaders ) {
 
+		// headers to process data from ...
+		var headers = [ 'x-chromelogger-data', 'x-chromephp-data' ];
+
 		// parse headers ...
 		details.responseHeaders.forEach(( header )=>{
 
-			// ChromeLogger data ! decode and process
-			if ( header.name.toLowerCase() == 'x-chromelogger-data' ) {
+			// ChromeLogger data ! decode and process ...
+			if ( headers.includes( header.name.toLowerCase() ) ) {
 
-				try {
+				// load options, process ...
+				browser.storage.sync.get(DEFAULT_OPTIONS).then(opts=>{
 
-					// base64 decode / parse JSON ...
-					var data = JSON.parse( atob( header.value ) );
-
-					// append method url to first entry ...
-					data.rows[0][0].push('-', details.method, details.url);
-
-					// process and log ...
-					processChromeLoggerData( data ).then(data=>{
+					// display data url ? log it as chromelogger data ...
+					if ( opts.display_data_url ) processChromeLoggerData({
+						rows: [[[
+							'%c%s %s',
+							opts.console_substitution_styles.header,
+							details.method,
+							details.url
+						]]]
+					}).then(data=>{
 						tabFromId( details.tabId ).log( data );
 					});
 
-				} catch( error ) { console.error(error); }
+					// attempt to parse data from header ...
+					try {
+
+						// base64 decode / parse JSON ...
+						var data = JSON.parse( atob( header.value ) );
+
+						// process and log ...
+						processChromeLoggerData( data ).then(data=>{
+							tabFromId( details.tabId ).log( data );
+						});
+
+					} catch( error ) { console.error(error); }
+
+				});
 
 			}
 
@@ -342,7 +417,7 @@ function onDevPortMessage( details ) {
 
 	}
 
-	// ChromeLogger rows passed from document from devtools ...
+	// ChromeLogger rows passed through devtools from DOM ...
 	else if ( details.rows ) {
 
 		processChromeLoggerData( details ).then(data=>{
@@ -374,6 +449,8 @@ function onDevPortDisconnect( port ) {
 /**
  * Listener / Assigns tab object and handlers connecting devtools context when devtools are opened on a tab.
  * @since 1.0
+ * @since 1.7
+ *	- removed onHeadersReceived listener "types" to process headers from ALL resources.
  * @param runtime.Port port
  */
 browser.runtime.onConnect.addListener(( port ) => {
@@ -397,7 +474,6 @@ browser.runtime.onConnect.addListener(( port ) => {
 			tab.onHeadersReceived,
 			{
 				"urls": [ "<all_urls>" ],
-				"types": [ "xmlhttprequest", "sub_frame", "main_frame", "ping", "script", "stylesheet" ],
 				"tabId": tabId
 			},
 			[ "responseHeaders" ]

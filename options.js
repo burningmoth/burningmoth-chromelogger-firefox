@@ -20,6 +20,9 @@ function populateForm( opts ) {
 		}
 	});
 
+	// misc. settings ...
+	document.querySelector('input#display_data_url').checked = opts.display_data_url;
+
 }
 
 
@@ -68,8 +71,16 @@ document.addEventListener("DOMContentLoaded", event=>{
 				console_substitution_styles[ input.id.substr( input.id.indexOf('-') + 1 ) ] = input.value;
 			});
 
-			// save styles ...
-			browser.storage.sync.set({ console_substitution_styles: console_substitution_styles })
+			// save settings ...
+			browser.storage.sync.set({
+
+				// styles ...
+				console_substitution_styles: console_substitution_styles,
+
+				// display url ...
+				display_data_url: document.querySelector("form input#display_data_url").checked,
+
+			})
 			.catch(error=>{ console.error(error); });
 
 		}
@@ -78,6 +89,4 @@ document.addEventListener("DOMContentLoaded", event=>{
 
 
 });
-
-
 

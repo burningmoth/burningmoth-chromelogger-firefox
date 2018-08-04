@@ -2,6 +2,8 @@
 <!--/**
  * Extension options page.
  * @since 1.5
+ * @since 1.7
+ *	- added classname styles.
 */-->
 <html>
 	<head>
@@ -52,6 +54,7 @@
 		<form>
 
 		<fieldset id="console_substitution_styles">
+
 			<legend>Substitution Styles</legend>
 
 			<label for="console_substitution_styles-error">Console.error()</label>
@@ -72,8 +75,23 @@
 			<label for="console_substitution_styles-number">Number</label>
 			<input type="text" id="console_substitution_styles-number"/>
 
-			<label for="console_substitution_styles-fileline">file:line</label>
+			<label for="console_substitution_styles-fileline">/backtrace/file:line</label>
 			<input type="text" id="console_substitution_styles-fileline"/>
+
+			<label for="console_substitution_styles-classname">Class Name</label>
+			<input type="text" id="console_substitution_styles-classname"/>
+
+			<label for="console_substitution_styles-header">Data Header</label>
+			<input type="text" id="console_substitution_styles-header"/>
+
+		</fieldset>
+
+		<fieldset>
+
+			<legend>Misc. Settings</legend>
+
+			<label for="display_data_url"><input type="checkbox" id="display_data_url"/></label>
+			<span>Display url where data is parsed from. Styled by Data Header (above).</span>
 
 		</fieldset>
 

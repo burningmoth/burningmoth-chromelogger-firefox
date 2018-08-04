@@ -36,6 +36,9 @@ port.onDisconnect.addListener(( port ) => {
  * @since 1.5
  *	- moved all data processing to bg.js onDevPortMessage()
  *	- updated to use data.args processed from data.rows
+ * @since 1.7
+ *	- parse <script[data-chromelogger-rows]> nodes data-chromelogger-version and data-chromelogger-columns attributes
+ *	- parse <script[data-chromelogger-data]> nodes.
  *
  * @param tabs.onHeadersReceived|ChromeLoggerData details
  */
@@ -63,31 +66,54 @@ port.onMessage.addListener(( details ) => {
 
 	}
 
-	// process from content ? collect any rows reported in the document (after the headers) ...
+	// process from content ? collect any data reported in the document (after the headers) ...
 	else if ( details.processContentUrl ) {
 
 		browser.devtools.inspectedWindow.eval(
 			'(function(){ '
-				+ 'var rows = [], nodes = document.querySelectorAll("script[data-chromelogger-rows]"), key, value; '
+				+ 'var data = [], nodes = document.querySelectorAll("script[data-chromelogger-rows]"), key, value; '
+				//+ 'if ( nodes.length ) console.info("ChromeLogger: script[data-chromelogger-rows] is deprecated. Use script[data-chromelogger-data] instead. See https://github.com/burningmoth/burningmoth-chromelogger-firefox/blob/master/README.md"); '
 				+ 'nodes.forEach(node=>{ '
 					+ 'if ( '
 						+ '( key = node.dataset.chromeloggerRows ) '
 						+ '&& ( value = window[ key ] ) '
 						+ '&& Array.isArray(value) '
-					+ ') rows = rows.concat(value); '
+					+ ') data.push({ '
+						+ 'rows: value, '
+						+ 'columns: ( '
+							+ '( value = node.dataset.chromeloggerColumns ) '
+							+ '? value.replace(/\s/,"").split(",") '
+							+ ': [ "log", "backtrace", "type" ] '
+						+ '), '
+						+ 'version: ('
+							+ '( value = node.dataset.chromeloggerVersion ) '
+							+ '? value '
+							+ ': "1.0" '
+						+ ') '
+					+ '}); '
 				+ '}); '
-				+ 'return rows; '
+				+ 'nodes = document.querySelectorAll("script[data-chromelogger-data]"); '
+				+ 'nodes.forEach(node=>{ '
+					+ 'if ( '
+						+ '( key = node.dataset.chromeloggerData ) '
+						+ '&& ( value = window[ key ] ) '
+						+ '&& typeof value == "object" '
+						+ '&& value.rows '
+						+ '&& Array.isArray(value.rows) '
+					+ ') data.push(value); '
+				+ '}); '
+				+ 'return data; '
 			+ '})();'
 			/* @todo implement when supported !!!, { frameURL: details.processContentUrl }*/
-		).then(([ rows, failure ])=>{
+		).then(([ data, failure ])=>{
 
 			// eval'd code failed ? report error object ...
 			if ( failure ) console.error( failure );
 
-			// rows found ? pass back to background script for processing ...
-			else if ( rows.length ) port.postMessage({
-				'rows': rows,
-				'tabId': browser.devtools.inspectedWindow.tabId
+			// data found ? pass back to background script for processing ...
+			else data.forEach(data=>{
+				data.tabId = browser.devtools.inspectedWindow.tabId;
+				port.postMessage(data);
 			});
 
 		});
