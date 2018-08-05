@@ -1,5 +1,9 @@
 # Chrome Logger Firefox WebExtension Change Log
 
+### 2018 Aug 04 / Version 1.7.1
+* Fixed: broken `table` and various other `console` methods.
+* Fixed: inadequate substitution pattern detection and subsequent unescaping.
+
 ### 2018 Aug 03 / Version 1.7
 * Fixed: columns arrays that were arranged in ways or [in|ex]cluded columns other than what was explicitly specified by the protocol failed to process. @shoutout Zxurian
 * Added: Support for `[object].___class_name` and Class Name substitution styling.

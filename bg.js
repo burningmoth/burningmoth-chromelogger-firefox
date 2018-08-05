@@ -201,17 +201,14 @@ function processChromeLoggerData( data ) {
 
 				var
 
+				// console method / @see https://developer.mozilla.org/en-US/docs/Web/API/Console
+				method = row.type,
+
 				// console.[method] arguments ...
 				args = row.log,
 
-				// console method ...
-				method = row.type,
-
 				// file:line ...
 				fileline = row.backtrace,
-
-				// style per argument type ...
-				style = '',
 
 				// substitution pattern ...
 				tmpl_pattern = '',
@@ -222,13 +219,24 @@ function processChromeLoggerData( data ) {
 				// ensure arguments is array ...
 				if ( ! Array.isArray(args) ) args = [ args ];
 
+				// assertion ? ...
+				if ( method == 'assert' ) {
+					// resolves true ? log nothing ...
+					if ( args.shift() ) return false;
+					// false ! log error ...
+					else method = 'error';
+				}
+
 				// process arguments ...
-				if ( args.length > 0 ) {
+				if (
+					args.length > 0
+					&& [ 'log', 'info', 'warn', 'error', 'group', 'groupCollapsed' ].includes(method)
+				) {
 
 					// detect, passthru an existing substitution pattern ...
 					if (
 						typeof args[0] == 'string'
-						&& /%(s|d|i|f|o|O|c|\.\d+(d|i|f))/.test(args[0])
+						&& /(^|[^%])%(s|d|i|f|o|O|c|\.\d+(d|i|f))/.test(args[0])
 					) {
 						tmpl_pattern = args.shift();
 						tmpl_args = args;
@@ -246,58 +254,33 @@ function processChromeLoggerData( data ) {
 							switch ( typeof arg ) {
 
 								case 'string':
-
-									style = opts.console_substitution_styles[( method == 'groupCollapsed' ? 'group' : method )];
-
-									if ( style ) {
-										tmpl_pattern.push('%c%s%c');
-										tmpl_args.push(style, arg, '');
-									}
-									else {
-										tmpl_pattern.push('%s');
-										tmpl_args.push(arg);
-									}
+									tmpl_pattern.push('%c%s%c');
+									tmpl_args.push(
+										opts.console_substitution_styles[(
+											method == 'groupCollapsed'
+											? 'group'
+											: method
+										)],
+										// unescape any passed substitution patterns ...
+										arg.replace(/%{2,}(s|d|i|f|o|O|c|\.\d+(d|i|f))/g, '%$1'),
+										''
+									);
 									break;
 
 								case 'number':
-
-									style = opts.console_substitution_styles['number'];
-
-									if ( style ) {
-										tmpl_pattern.push('%c%s%c');
-										tmpl_args.push(style, arg, '');
-									}
-									else {
-										tmpl_pattern.push('%s');
-										tmpl_args.push(arg);
-									}
+									tmpl_pattern.push('%c%s%c');
+									tmpl_args.push(opts.console_substitution_styles.number, arg, '');
 									break;
 
 								case 'object':
 
 									// has special class name property ? prepend and remove ...
 									if ( arg.hasOwnProperty('___class_name') ) {
-
-										style = opts.console_substitution_styles['classname'];
-
-										if ( style ) {
-											tmpl_pattern.push('%c%s%c %o');
-											tmpl_args.push(style, arg.___class_name, '', arg);
-										}
-										else {
-											tmpl_pattern.push('%s %o');
-											tmpl_args.push(arg.___class_name, arg);
-										}
-
+										tmpl_pattern.push('%c%s%c');
+										tmpl_args.push(opts.console_substitution_styles.classname, arg.___class_name, '');
 										delete arg.___class_name;
-
 									}
-
-									else {
-										tmpl_pattern.push('%o');
-										tmpl_args.push(arg);
-									}
-									break;
+									// no break, passthru ...
 
 								default:
 									tmpl_pattern.push('%o');
@@ -315,22 +298,20 @@ function processChromeLoggerData( data ) {
 
 				}
 
+				// straight arguments for all other console methods, no backtrace ...
+				else {
+					tmpl_args = args;
+					fileline = false;
+				}
+
 				// append fileline ...
 				if ( fileline ) {
 
 					// add a space if there is other pattern content ...
 					if ( tmpl_pattern ) tmpl_pattern = tmpl_pattern.concat(' ');
 
-					style = opts.console_substitution_styles['fileline'];
-
-					if ( style ) {
-						tmpl_pattern = tmpl_pattern.concat('%c%s');
-						tmpl_args.push(style, fileline);
-					}
-					else {
-						tmpl_pattern = tmpl_pattern.concat('%s');
-						tmpl_args.push(fileline);
-					}
+					tmpl_pattern = tmpl_pattern.concat('%c%s');
+					tmpl_args.push(opts.console_substitution_styles.fileline, fileline);
 
 				}
 
@@ -343,7 +324,7 @@ function processChromeLoggerData( data ) {
 				// return processed arguments ...
 				return tmpl_args;
 
-			});
+			}).filter( args => args !== false );
 
 			// return processed data ...
 			resolve(data);

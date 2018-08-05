@@ -72,7 +72,6 @@ port.onMessage.addListener(( details ) => {
 		browser.devtools.inspectedWindow.eval(
 			'(function(){ '
 				+ 'var data = [], nodes = document.querySelectorAll("script[data-chromelogger-rows]"), key, value; '
-				//+ 'if ( nodes.length ) console.info("ChromeLogger: script[data-chromelogger-rows] is deprecated. Use script[data-chromelogger-data] instead. See https://github.com/burningmoth/burningmoth-chromelogger-firefox/blob/master/README.md"); '
 				+ 'nodes.forEach(node=>{ '
 					+ 'if ( '
 						+ '( key = node.dataset.chromeloggerRows ) '
