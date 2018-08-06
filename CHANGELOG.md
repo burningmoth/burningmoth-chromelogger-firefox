@@ -1,5 +1,8 @@
 # Chrome Logger Firefox WebExtension Change Log
 
+### 2018 Aug 06 / Version 1.7.2
+* Fixed: invalid `data.rows[...].type` values resulted in `console` error.
+
 ### 2018 Aug 04 / Version 1.7.1
 * Fixed: broken `table` and various other `console` methods.
 * Fixed: inadequate substitution pattern detection and subsequent unescaping.

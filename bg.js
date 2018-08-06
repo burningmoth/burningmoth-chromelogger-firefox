@@ -216,6 +216,12 @@ function processChromeLoggerData( data ) {
 				// substition arguments ...
 				tmpl_args = [];
 
+				// ensure method is valid ...
+				if (
+					typeof method != 'string'
+					|| ! console[ method ]
+				) method = 'log';
+
 				// ensure arguments is array ...
 				if ( ! Array.isArray(args) ) args = [ args ];
 
