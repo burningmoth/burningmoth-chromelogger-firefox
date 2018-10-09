@@ -280,8 +280,8 @@ function processChromeLoggerData( data ) {
 
 								case 'object':
 
-									// has special class name property ? prepend and remove ...
-									if ( arg.hasOwnProperty('___class_name') ) {
+									// resolves to true (not null or undefined) and has special class name property ? prepend and remove ...
+									if ( arg && arg.hasOwnProperty('___class_name') ) {
 										tmpl_pattern.push('%c%s%c');
 										tmpl_args.push(opts.console_substitution_styles.classname, arg.___class_name, '');
 										delete arg.___class_name;

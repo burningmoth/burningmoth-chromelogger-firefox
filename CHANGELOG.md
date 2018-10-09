@@ -1,5 +1,8 @@
 # Chrome Logger Firefox WebExtension Change Log
 
+### 2018 Oct 09 / Version 1.7.3
+* Fixed: null "object" resulted in error when checked for property, ending processing of rest of data stack.
+
 ### 2018 Aug 06 / Version 1.7.2
 * Fixed: invalid `data.rows[...].type` values resulted in `console` error.
 
