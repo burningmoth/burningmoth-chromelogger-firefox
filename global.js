@@ -1,12 +1,16 @@
 "use strict";
 /**
  * Global scripts.
+ */
+
+/**
+ * Default options object.
  * @since 1.5
  * @since 1.7
  *	- added classname substitution style.
  *	- added display_data_url option.
+ * @var object
  */
-
 const DEFAULT_OPTIONS = {
 	console_substitution_styles: {
 		error: 'color:red;',

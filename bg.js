@@ -1,7 +1,7 @@
 "use strict";
 /**
  * Background script.
- * All the routine heavy lifting should be done here and the results cordinated betweent devtools.js devtools script and log.js content script.
+ * All the routine heavy lifting should be done here and the results coordinated betweent dev.js devtools script and log.js content script.
  */
 
 /**
@@ -47,6 +47,9 @@ function tabFromId( tabId ) {
 
 /**
  * Tab class.
+ * @since 1.0
+ * @since 2.0
+ *	- removed processContentUrl() method, functionality moved to log.js
  */
 class Tab {
 
@@ -127,17 +130,6 @@ class Tab {
 
 	}
 
-
-	/**
-	 * Instructs devtools to extract additional information from post-headers loaded content to log.
-	 * @since 1.5
-	 * @param string url
-	 *	- url of the tab frame to extract from
-	 *	- not yet supported as of ChromeLogger 1.5 / Firefox 60, to be implemented when support arrives
-	 */
-	processContentUrl( url ){
-		this.devPort.postMessage({ 'processContentUrl': url });
-	}
 
 }
 
@@ -336,7 +328,7 @@ function processChromeLoggerData( data ) {
 			resolve(data);
 
 		})
-		.catch(error=>{ console.error(error); });
+		.catch(console.error);
 
 	});
 
@@ -346,12 +338,16 @@ function processChromeLoggerData( data ) {
 /**
  * Tab.devPort runtime.Port.onMessage event handler.
  * Catches and processes header details sent by Tab.onHeadersReceived() handler to and passed back from a verified open devtools.
+ *
  * @since 1.0
  * @since 1.5
  *	- accept rows array retrieved from document by devtools ...
  * @since 1.7
  *	- also checks for X-ChromePHP-Data header
  *	- logs details url, method separately as chromelogger data
+ * @since 2.0
+ *	- removed capturing details.rows from dev.js
+ *
  * @param tabs.onHeadersReceived details
  */
 function onDevPortMessage( details ) {
@@ -404,15 +400,6 @@ function onDevPortMessage( details ) {
 
 	}
 
-	// ChromeLogger rows passed through devtools from DOM ...
-	else if ( details.rows ) {
-
-		processChromeLoggerData( details ).then(data=>{
-			tabFromId( details.tabId ).log( data );
-		});
-
-	}
-
 }
 
 
@@ -435,9 +422,11 @@ function onDevPortDisconnect( port ) {
 
 /**
  * Listener / Assigns tab object and handlers connecting devtools context when devtools are opened on a tab.
+ *
  * @since 1.0
  * @since 1.7
  *	- removed onHeadersReceived listener "types" to process headers from ALL resources.
+ *
  * @param runtime.Port port
  */
 browser.runtime.onConnect.addListener(( port ) => {
@@ -451,12 +440,12 @@ browser.runtime.onConnect.addListener(( port ) => {
 	port.onMessage.addListener(onDevPortMessage);
 
 	// no tab ? create it ...
-	if ( !tab ) tab = tabs[ tabKey ] = new Tab( tabId, port );
+	if ( ! tab ) tab = tabs[ tabKey ] = new Tab( tabId, port );
 	// update existing port ...
 	else tab.devPort = port;
 
 	// no tab specific anon (IMPORTANT!) listener assigned to catch headers ? assign now ...
-	if ( !browser.webRequest.onHeadersReceived.hasListener( tab.onHeadersReceived ) ) {
+	if ( ! browser.webRequest.onHeadersReceived.hasListener( tab.onHeadersReceived ) ) {
 		browser.webRequest.onHeadersReceived.addListener(
 			tab.onHeadersReceived,
 			{
@@ -466,6 +455,22 @@ browser.runtime.onConnect.addListener(( port ) => {
 			[ "responseHeaders" ]
 		);
 	}
+
+});
+
+
+/**
+ * Listener / receives ChromeLoggerData objects from log.js parsed from document.
+ *
+ * @since 2.0
+ *
+ * @param ChromeLoggerData details
+ */
+browser.runtime.onMessage.addListener(( details )=>{
+
+	processChromeLoggerData( details ).then(data=>{
+		tabFromId( details.tabId ).log( data );
+	});
 
 });
 
@@ -500,52 +505,46 @@ browser.webNavigation.onBeforeNavigate.addListener(( details )=>{
  *	- added fallback to devtools reporting if script injection fails
  * @since 1.5
  *	- finally tell tab to process loaded DOM content for additional info to log
+ * @since 2.0
+ *	- moved DOM content processing from dev.js to log.js
  */
 browser.webNavigation.onDOMContentLoaded.addListener(( details )=>{
 
 	var tab = tabFromId( details.tabId );
-	if ( tab ) {
+	if (
+		tab
+		&& details.frameId == 0 // main tab document ...
+	) {
 
-		// main tab document ...
-		if ( details.frameId == 0 ) {
+		// inject log.js to receive messages sent to tab ? ...
+		browser.tabs.executeScript( details.tabId, { file: '/log.js' })
+		.then(()=>{
 
-			// inject log.js to receive messages sent to tab ? ...
-			browser.tabs.executeScript( details.tabId, { file: '/log.js' })
-			.then(()=>{
+			// load global functions required by log.js / assume this works at this point ...
+			browser.tabs.executeScript( details.tabId, { file: '/global.js' })
+			.finally(()=>{
 
-				// load global functions required by log.js / assume this works at this point ...
-				browser.tabs.executeScript( details.tabId, { file: '/global.js' })
-				.finally(()=>{
+				// update ready state ...
+				tab.ready = true;
 
-					// update ready state ...
-					tab.ready = true;
+				// send any pending items ...
+				while ( tab.pending.length ) browser.tabs.sendMessage( details.tabId, tab.pending.shift() );
 
-					// send any pending items ...
-					while ( tab.pending.length ) browser.tabs.sendMessage( details.tabId, tab.pending.shift() );
-
-				});
-
-			// unable to inject script ! fallback to devtools functions ...
-			}).catch(()=>{
-
-				// fallback to devTools.inspectedWindow.eval() !!!
-				tab.fallback = true;
-
-				// send any pending items back through the dev port ...
-				while ( tab.pending.length ) tab.devPort.postMessage( tab.pending.shift() );
-
-			// additional processes ...
-			}).finally(()=>{
-
-				// extract any info to log from the frame ...
-				tab.processContentUrl( details.url );
+				// tell tab to parse any items from the document itself ...
+				browser.tabs.sendMessage( details.tabId, { tabId: details.tabId });
 
 			});
 
-		}
+		// unable to inject script ! fallback to devtools functions ...
+		}).catch(()=>{
 
-		// @todo activate when devtools.inspectedWindow.eval() supports the 'options' argument
-		//else tab.processContentUrl( details.url );
+			// fallback to devTools.inspectedWindow.eval() !!!
+			tab.fallback = true;
+
+			// send any pending items back through the dev port ...
+			while ( tab.pending.length ) tab.devPort.postMessage( tab.pending.shift() );
+
+		});
 
 	}
 

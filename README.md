@@ -8,19 +8,22 @@ Console output is automatically styled from settings *unless* non-escaped [strin
 
 ## Logging Data From DOM
 
-To log data to the web console through this extension *after* headers have been sent, the following methods are supported:
-	
-	<script
-		data-chromelogger-version="1.0" 
+To log data to the web console through this extension *after* headers have been sent, the following methods are supported.
+
+Log the entire ChromeLoggerData object that would've otherwise been the base64-encoded header value.
+
+	<script 
+		id="chromelogger" 
+		type="application/json"
+	>{ ChromeLoggerData object }</script>	
+
+Or just log the `rows` array of the ChromeLoggerData object. Attributes `data-chromelogger-version` and `data-chromelogger-columns` are optional and default to the values shown if missing.
+
+	<script 
+		id="chromelogger" 
+		type="application/json" 
+		data-chromelogger-version="2.0" 
 		data-chromelogger-columns="log,backtrace,type"
-		data-chromelogger-rows="var_name"
-	>
-		var var_name = [[log, backtrace, type],...];
-	</script>	
+	>[ ChromeLoggerData.rows array ]</script>
 
-Attributes `data-chromelogger-version` and `data-chromelogger-columns` are optional and default to the values shown if missing. Or log the entire data object that would've otherwise been the base64-encoded header value:
-
-	<script data-chromelogger-data="var_name">
-		var var_name = { ChromeLoggerData Object };
-	</script>
-
+`<script>` values must be valid JSON or error is thrown.

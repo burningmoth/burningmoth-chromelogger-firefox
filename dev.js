@@ -1,6 +1,6 @@
 "use strict";
 /**
- * Devtools page.
+ * DevTools
  * Triggers the parsing, processing and outputting to the web console messages encoded in X-ChromeLogger-Data headers.
  */
 
@@ -39,6 +39,8 @@ port.onDisconnect.addListener(( port ) => {
  * @since 1.7
  *	- parse <script[data-chromelogger-rows]> nodes data-chromelogger-version and data-chromelogger-columns attributes
  *	- parse <script[data-chromelogger-data]> nodes.
+ * @since 2.0
+ *	- removed details.processContentUrl processing, moved to log.js
  *
  * @param tabs.onHeadersReceived|ChromeLoggerData details
  */
@@ -61,60 +63,7 @@ port.onMessage.addListener(( details ) => {
 				+ 'return true; '
 			+ '})();'
 		).then(([ success, failure ])=>{
-			if ( failure ) console.error( failure );
-		});
-
-	}
-
-	// process from content ? collect any data reported in the document (after the headers) ...
-	else if ( details.processContentUrl ) {
-
-		browser.devtools.inspectedWindow.eval(
-			'(function(){ '
-				+ 'var data = [], nodes = document.querySelectorAll("script[data-chromelogger-rows]"), key, value; '
-				+ 'nodes.forEach(node=>{ '
-					+ 'if ( '
-						+ '( key = node.dataset.chromeloggerRows ) '
-						+ '&& ( value = window[ key ] ) '
-						+ '&& Array.isArray(value) '
-					+ ') data.push({ '
-						+ 'rows: value, '
-						+ 'columns: ( '
-							+ '( value = node.dataset.chromeloggerColumns ) '
-							+ '? value.replace(/\s/,"").split(",") '
-							+ ': [ "log", "backtrace", "type" ] '
-						+ '), '
-						+ 'version: ('
-							+ '( value = node.dataset.chromeloggerVersion ) '
-							+ '? value '
-							+ ': "1.0" '
-						+ ') '
-					+ '}); '
-				+ '}); '
-				+ 'nodes = document.querySelectorAll("script[data-chromelogger-data]"); '
-				+ 'nodes.forEach(node=>{ '
-					+ 'if ( '
-						+ '( key = node.dataset.chromeloggerData ) '
-						+ '&& ( value = window[ key ] ) '
-						+ '&& typeof value == "object" '
-						+ '&& value.rows '
-						+ '&& Array.isArray(value.rows) '
-					+ ') data.push(value); '
-				+ '}); '
-				+ 'return data; '
-			+ '})();'
-			/* @todo implement when supported !!!, { frameURL: details.processContentUrl }*/
-		).then(([ data, failure ])=>{
-
-			// eval'd code failed ? report error object ...
-			if ( failure ) console.error( failure );
-
-			// data found ? pass back to background script for processing ...
-			else data.forEach(data=>{
-				data.tabId = browser.devtools.inspectedWindow.tabId;
-				port.postMessage(data);
-			});
-
+			if ( failure ) console.error(failure);
 		});
 
 	}

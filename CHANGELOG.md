@@ -1,5 +1,11 @@
 # Chrome Logger Firefox WebExtension Change Log
 
+### 2019 Nov 24 / Version 2.0
+* Removed: `<script[data-chromelogger-data]>` and `<script[data-chromelogger-rows]>` node parsing.
+* Added: `<script[type="application/json"]#chromelogger>` node parsing.
+* Updated: moved DOM parsing functionality from devtools eval'd code (Mozilla no likey!) to injected content script.
+* Fixed: dark, transparent icon did not display well w/dark theme.
+
 ### 2018 Oct 09 / Version 1.7.3
 * Fixed: null "object" resulted in error when checked for property, ending processing of rest of data stack.
 
